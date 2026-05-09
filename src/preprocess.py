@@ -182,13 +182,41 @@ WHERE rn = 1
 ORDER BY Year, Name_Clean
 """
 
+def build_career_awards(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    t_stats の Awards 列から過去5年間の受賞歴を集計し、
+    t_career_awards テーブルを作成する。
+    build_model_df より前に呼ぶこと。
+    """
+    con.execute("""
+        CREATE OR REPLACE TEMP TABLE t_career_awards AS
+        WITH award_flags AS (
+            SELECT
+                Name_Clean,
+                Year,
+                CASE WHEN Awards LIKE '%MVP%' THEN 1 ELSE 0 END AS mvp_f,
+                CASE WHEN Awards LIKE '%SS%'  THEN 1 ELSE 0 END AS ss_f,
+                CASE WHEN Awards LIKE '%GG%'  THEN 1 ELSE 0 END AS gg_f,
+                CASE WHEN Awards LIKE '%AS%'  THEN 1 ELSE 0 END AS as_f
+            FROM t_stats
+        )
+        SELECT
+            Name_Clean,
+            Year,
+            SUM(mvp_f) OVER (PARTITION BY Name_Clean ORDER BY Year ROWS BETWEEN 5 PRECEDING AND 1 PRECEDING) AS mvp_5yr,
+            SUM(ss_f)  OVER (PARTITION BY Name_Clean ORDER BY Year ROWS BETWEEN 5 PRECEDING AND 1 PRECEDING) AS ss_5yr,
+            SUM(gg_f)  OVER (PARTITION BY Name_Clean ORDER BY Year ROWS BETWEEN 5 PRECEDING AND 1 PRECEDING) AS gg_5yr,
+            SUM(as_f)  OVER (PARTITION BY Name_Clean ORDER BY Year ROWS BETWEEN 5 PRECEDING AND 1 PRECEDING) AS as_5yr
+        FROM award_flags
+    """)
+    print("[OK] t_career_awards を作成しました")
 
 def build_model_df(
     con: duckdb.DuckDBPyConnection, min_salary: int = MIN_SALARY_THRESHOLD
 ) -> pd.DataFrame:
     """BRef・FanGraphs・年俸を結合してモデル用DataFrameを構築する"""
+    build_career_awards(con)  # MERGE_QUERY より前に作成が必要
     df = con.execute(MERGE_QUERY).df()
-
     if "WAR" in df.columns:
         df = df.rename(columns={"WAR": "WAR(bref)"})
     if "fWAR" in df.columns:
