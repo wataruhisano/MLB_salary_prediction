@@ -1,4 +1,4 @@
-# ⚾ MLB Salary Prediction
+#  MLB Salary Prediction
 
 MLB（メジャーリーグベースボール）野手の統計データをもとに、機械学習で選手の適正年俸を予測するプロジェクトです。
 
