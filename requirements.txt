@@ -1,0 +1,12 @@
+pandas>=2.0
+numpy>=1.24
+duckdb>=0.10
+scikit-learn>=1.4
+lightgbm>=4.0
+xgboost>=2.0
+shap>=0.45
+statsmodels>=0.14
+matplotlib>=3.7
+seaborn>=0.13
+pybaseball>=2.2
+mlb-statsapi>=1.7
